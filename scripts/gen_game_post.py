@@ -90,7 +90,7 @@ def run():
 
         # 保存为 Hugo Markdown
         # 用日期做文件名避免重复
-        file_name = f"posts/game-guide-{datetime.now().strftime('%Y%m%d')}/index.md"
+        file_name = f"post/game-guide-{datetime.now().strftime('%Y%m%d')}/index.md"
         os.makedirs(os.path.dirname(f"content/{file_name}"), exist_ok=True)
 
         full_content = f"""---
