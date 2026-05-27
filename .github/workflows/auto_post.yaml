@@ -5,6 +5,11 @@ on:
     - cron: '0 1 * * *' # 北京时间每天上午 9 点运行
   workflow_dispatch: # 允许你在 GitHub 网页手动点按钮触发测试
 
+permissions:
+  contents: write  # <--- 核心修改：必须是 write，原来的 read 不行
+  pages: write
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
