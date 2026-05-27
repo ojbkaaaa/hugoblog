@@ -27,7 +27,7 @@ jobs:
           hugo-version: 'latest'
           extended: true
       - name: Build with Hugo
-        run: hugo --minify
+        run: hugo --minify --buildFuture
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3 # 核心修复：升级到 v3 避开弃用错误
         with:
