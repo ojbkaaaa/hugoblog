@@ -215,18 +215,18 @@ def run():
 
 
             full_content = f"""---
-    title: "{entry.title}"
-    date: {(datetime.now()-timedelta(days=1)).strftime('%Y-%m-%d')}
-    categories: ["Genshin Impact", "Game Guide"]
-    tags: ["Gaming", "News"]
-    image: "cover.webp"
-    ---
-    
-    {article_md}
-    
-    ---
-    *Source: Compiled from Reddit r/Genshin_Impact discussion.*
-    """
+title: "{entry.title}"
+date: {(datetime.now()-timedelta(days=1)).strftime('%Y-%m-%d')}
+categories: ["Genshin Impact", "Game Guide"]
+tags: ["Gaming", "News"]
+image: "cover.webp"
+---
+
+{article_md}
+
+---
+*Source: Compiled from Reddit r/Genshin_Impact discussion.*
+"""
             with open(f"{post_dir}/index.md", "w", encoding="utf-8") as f:
                 f.write(full_content)
 
