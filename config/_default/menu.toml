@@ -14,3 +14,17 @@
 
     [social.params]
         icon = "brand-github"
+
+[[social]]
+    identifier = "privacy"
+    name = "Privacy"
+    url = "/privacy-policy/"
+    [social.params]
+        icon = "link"
+
+[[social]]
+    identifier = "about"
+    name = "About"
+    url = "/about-us/"
+    [social.params]
+        icon = "user"

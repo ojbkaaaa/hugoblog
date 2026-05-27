@@ -1,5 +1,5 @@
 import feedparser
-import os, re, io
+import os, re, io, time
 from PIL import Image # 需要安装 Pillow 库
 import requests
 from datetime import datetime, timedelta
@@ -140,7 +140,7 @@ def run():
         entry = feed.entries[0]
         print(f"Processing: {entry.title}")
 
-        folder_name = f"game-guide-{(datetime.now()-timedelta(days=1)).strftime('%Y%m%d%H%M')}"
+        folder_name = f"game-guide-{int(time.time())}"
         post_dir = f"content/post/{folder_name}"
         os.makedirs(post_dir, exist_ok=True)
 
