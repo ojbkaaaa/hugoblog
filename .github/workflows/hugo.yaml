@@ -3,6 +3,10 @@ name: Deploy Hugo site to Pages
 on:
   push:
     branches: ["main"]
+  workflow_run:
+    workflows: ["Auto Post News"]  # 这里的名字要和 auto_post.yaml 的 name 对上
+    types: [completed]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,12 +15,15 @@ permissions:
 
 jobs:
   build:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          fetch-depth: 0    # 确保抓取全量的最新历史
+          ref: main         # 强制拉取最新分支
       - name: Install Go
         uses: actions/setup-go@v5  # 升级到了 v5
         with:
