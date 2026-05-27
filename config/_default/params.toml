@@ -19,7 +19,7 @@ SortBy              = "default"
 
 [sidebar]
     emoji    = "🍥"
-    subtitle = "随便我写，随便你看"
+    subtitle = "Ai Will Do It"
     avatar   = "img/avatar.png"
 
 [article]

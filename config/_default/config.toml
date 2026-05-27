@@ -1,7 +1,7 @@
 # Change baseurl before deploy
 baseurl = "https://ojbkaaaa.github.io/hugoblog/"
 locale  = "en-us"
-title   = "Ojbk我的博客aaaa"
+title   = "Ojbkaaaa Game Guide"
 
 # Theme i18n support
 # See all available values at https://github.com/CaiJimmy/hugo-theme-stack/tree/master/i18n
