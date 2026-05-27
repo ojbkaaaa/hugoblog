@@ -3,7 +3,7 @@ name: Auto Post News
 on:
   schedule:
     - cron: '0 1 * * *' # 北京时间每天上午 9 点运行
-  workflow_dispatch: # 允许你在 GitHub 网页手动点按钮触发测试
+workflow_dispatch: # 允许你在 GitHub 网页手动点按钮触发测试
 
 jobs:
   build:
