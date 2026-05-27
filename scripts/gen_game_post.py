@@ -1,14 +1,17 @@
 import feedparser
-import os, json
+import os, re
 import requests
 from datetime import datetime
 from openai import OpenAI
+# from config import AICONFIG
 
+# config = AICONFIG()
 API_KEY = os.getenv("APIKEY", "")
 BASE_URL = os.getenv("BASEURL", "")
 MODEL = os.getenv("MODEL", "")
 
 client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+# client = OpenAI(api_key=config.APIKEY, base_url=config.BASEURL)
 
 
 # 抓取原神官方公告或 Reddit 热门的 RSS
@@ -78,6 +81,38 @@ def fetch_reddit():
         print(f"抓取失败: {e}")
         return None
 
+
+def download_high_res_image(name, post_dir):
+    """
+    通过请求头验证，强制下载真实的二进制图片
+    """
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
+
+    try:
+        # stream=True 允许我们先读头不读内容
+        # allow_redirects=True 会自动帮我们跳过所有的 301/302 页面，找到最后的原图
+        response = requests.get(f"https://i.redd.it/{name}", headers=headers, timeout=20, stream=True, allow_redirects=True)
+
+        # 检查返回的到底是不是图片
+        content_type = response.headers.get('Content-Type', '')
+        if 'image' not in content_type.lower():
+            return False
+
+        # 检查是否成功并保存二进制文件
+        if response.status_code == 200:
+            with open(f'{post_dir}/cover.png', 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            return True
+
+    except Exception as e:
+        print(f"下载过程中出错: {e}")
+    return False
+
+
+
 def run():
     feed = fetch_reddit()
     # 每天抓取当日最热的一篇讨论
@@ -85,20 +120,26 @@ def run():
         entry = feed.entries[0]
         print(f"Processing: {entry.title}")
 
+        folder_name = f"game-guide-{datetime.now().strftime('%Y%m%d%H%M')}"
+        post_dir = f"content/post/{folder_name}"
+        os.makedirs(post_dir, exist_ok=True)
+
+        summary = entry.summary
+        img_match = re.search(r'src="([^"]+\.(?:jpg|png|webp|jpeg)[^"]*)"', summary)
+        if img_match:
+            url = img_match.group(1)
+            name = url.split('?')[0].split('/')[-1]
+            download_high_res_image(name, post_dir)
         # 让 AI 扩写
         article_md = call_ai_to_openai(entry.summary)
 
-        # 保存为 Hugo Markdown
-        # 用日期做文件名避免重复
-        file_name = f"post/game-guide-{datetime.now().strftime('%Y%m%d')}/index.md"
-        os.makedirs(os.path.dirname(f"content/{file_name}"), exist_ok=True)
 
         full_content = f"""---
 title: "{entry.title}"
 date: {datetime.now().strftime('%Y-%m-%d')}
 categories: ["Genshin Impact", "Game Guide"]
 tags: ["Gaming", "News"]
-image: "cover.jpg"
+image: "cover.png"
 ---
 
 {article_md}
@@ -106,7 +147,7 @@ image: "cover.jpg"
 ---
 *Source: Compiled from Reddit r/Genshin_Impact discussion.*
 """
-        with open(f"content/{file_name}", "w", encoding="utf-8") as f:
+        with open(f"{post_dir}/index.md", "w", encoding="utf-8") as f:
             f.write(full_content)
 
 
