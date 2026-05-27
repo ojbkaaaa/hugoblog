@@ -219,7 +219,7 @@ def run():
     date: {(datetime.now()-timedelta(days=1)).strftime('%Y-%m-%d')}
     categories: ["Genshin Impact", "Game Guide"]
     tags: ["Gaming", "News"]
-    image: "cover.png"
+    image: "cover.webp"
     ---
     
     {article_md}
