@@ -1,7 +1,10 @@
+import time
+import textwrap
 import feedparser
-import os, re, io, time
-from PIL import Image # 需要安装 Pillow 库
+import os, re, io, json
+from PIL import Image, ImageDraw, ImageFont
 import requests
+import shutil
 from datetime import datetime, timedelta
 from openai import OpenAI
 # from config import AICONFIG
@@ -17,6 +20,18 @@ client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
 
 # 抓取原神官方公告或 Reddit 热门的 RSS
 REDDIT_RSS = "https://www.reddit.com/r/Genshin_Impact/top/.rss?t=day"
+HISTORY_FILE = "scripts/history.json"
+
+
+def load_history():
+    """读取已抓取的 URL 列表"""
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except:
+                return []
+    return []
 
 
 def call_ai_to_write(raw_content):
@@ -83,6 +98,29 @@ def fetch_reddit():
         return None
 
 
+def create_pro_cover(text, save_path):
+    # 1. 打开一张你预先做好的“漂亮背景” (比如 1200x630)
+    # 路径可以是在你的仓库里的 static 资源
+    img = Image.new('RGB', (1200, 630), color=(0, 102, 204))
+
+    draw = ImageDraw.Draw(img)
+
+    # 2. 获取字体 (使用固定字号即可，无需复杂计算)
+    font = ImageFont.truetype("./assets/fonts/bold.ttf", 60)
+
+    # 3. 粗暴的自动换行 (前 30 个字，两行显示)
+    # 这里不需要精确算法，利用 textwrap 简单切分即可
+
+    lines = textwrap.wrap(text, width=20)  # 每行20字符
+
+    # 4. 固定位置写入（比如从坐标 100, 200 开始写）
+    y_text = 200
+    for line in lines[:2]:  # 只显示前两行，防止溢出
+        draw.text((100, y_text), line, font=font, fill=(255, 255, 255))
+        y_text += 80
+
+    img.save(f'{save_path}/cover.webp', "WEBP", quality=80)
+
 def download_high_res_image(name, post_dir):
     """
     通过请求头验证，强制下载真实的二进制图片
@@ -131,44 +169,79 @@ def download_high_res_image(name, post_dir):
         print(f"下载过程中出错: {e}")
     return False
 
+def save_history(history):
+    """保存更新后的列表"""
+    # 只保留最近 100 条记录，防止文件无限增大
+    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(history[-100:], f, indent=2)
 
 
 def run():
+    history = load_history()
     feed = fetch_reddit()
     # 每天抓取当日最热的一篇讨论
-    if feed.entries:
-        entry = feed.entries[0]
-        print(f"Processing: {entry.title}")
-
+    new_count = 0
+    # 每次只抓取最近的 5 条进行判断
+    for entry in feed.entries[:5]:
         folder_name = f"game-guide-{int(time.time())}"
         post_dir = f"content/post/{folder_name}"
-        os.makedirs(post_dir, exist_ok=True)
+        try:
+            post_url = entry.link
 
-        summary = entry.summary
-        img_match = re.search(r'src="([^"]+\.(?:jpg|png|webp|jpeg)[^"]*)"', summary)
-        if img_match:
-            url = img_match.group(1)
-            name = url.split('?')[0].split('/')[-1]
-            download_high_res_image(name, post_dir)
-        # 让 AI 扩写
-        article_md = call_ai_to_openai(entry.summary)
+            # --- 核心查重逻辑 ---
+            if post_url in history:
+                print(f"跳过已存在的文章: {entry.title}")
+                continue
+
+            print(f"Processing: {entry.title}")
 
 
-        full_content = f"""---
-title: "{entry.title}"
-date: {(datetime.now()-timedelta(days=1)).strftime('%Y-%m-%d')}
-categories: ["Genshin Impact", "Game Guide"]
-tags: ["Gaming", "News"]
-image: "cover.webp"
----
+            os.makedirs(post_dir, exist_ok=True)
 
-{article_md}
+            summary = entry.summary
+            img_match = re.search(r'src="([^"]+\.(?:jpg|png|webp|jpeg)[^"]*)"', summary)
 
----
-*Source: Compiled from Reddit r/Genshin_Impact discussion.*
-"""
-        with open(f"{post_dir}/index.md", "w", encoding="utf-8") as f:
-            f.write(full_content)
+            if img_match:
+                url = img_match.group(1)
+                name = url.split('?')[0].split('/')[-1]
+                res = download_high_res_image(name, post_dir)
+                if not res:
+                    create_pro_cover(entry.title, post_dir)
+
+            else:
+                create_pro_cover(entry.title, post_dir)
+            # 让 AI 扩写
+            article_md = call_ai_to_openai(entry.summary)
+
+
+            full_content = f"""---
+    title: "{entry.title}"
+    date: {(datetime.now()-timedelta(days=1)).strftime('%Y-%m-%d')}
+    categories: ["Genshin Impact", "Game Guide"]
+    tags: ["Gaming", "News"]
+    image: "cover.png"
+    ---
+    
+    {article_md}
+    
+    ---
+    *Source: Compiled from Reddit r/Genshin_Impact discussion.*
+    """
+            with open(f"{post_dir}/index.md", "w", encoding="utf-8") as f:
+                f.write(full_content)
+
+            history.append(post_url)
+            new_count += 1
+
+            # 如果你只想每天更 1 篇，成功后直接 break
+            if new_count >= 3:
+                break
+        except Exception as e:
+            if os.path.exists(post_dir):
+                shutil.rmtree(post_dir)  # 彻底删除整个文件夹及其内容
+
+    if new_count > 0:
+        save_history(history)
 
 
 if __name__ == "__main__":
