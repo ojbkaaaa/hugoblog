@@ -1,7 +1,8 @@
 import feedparser
-import os, re
+import os, re, io
+from PIL import Image # 需要安装 Pillow 库
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from openai import OpenAI
 # from config import AICONFIG
 
@@ -102,9 +103,28 @@ def download_high_res_image(name, post_dir):
 
         # 检查是否成功并保存二进制文件
         if response.status_code == 200:
-            with open(f'{post_dir}/cover.png', 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
+
+            # 使用 Pillow 打开二进制图片数据
+            img = Image.open(io.BytesIO(response.content))
+
+            # 1. 如果图片是 RGBA（如带透明的PNG），转化为 RGB
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+
+            # 2. 缩小尺寸（比如宽度最大 1200px，高度按比例缩放）
+            max_width = 640
+            if img.width > max_width:
+                w_percent = (max_width / float(img.width))
+                h_size = int((float(img.height) * float(w_percent)))
+                img = img.resize((max_width, h_size), Image.LANCZOS)
+
+            # 3. 保存为 WebP 格式（极致压缩），质量设为 75-80
+            # 注意：保存后缀改为 .webp
+            save_path = f'{post_dir}/cover.webp'
+            img.save(save_path, "WEBP", quality=80)
+            # with open(f'{post_dir}/cover.png', 'wb') as f:
+            #     for chunk in response.iter_content(chunk_size=8192):
+            #         f.write(chunk)
             return True
 
     except Exception as e:
@@ -120,7 +140,7 @@ def run():
         entry = feed.entries[0]
         print(f"Processing: {entry.title}")
 
-        folder_name = f"game-guide-{datetime.now().strftime('%Y%m%d%H%M')}"
+        folder_name = f"game-guide-{(datetime.now()-timedelta(days=1)).strftime('%Y%m%d%H%M')}"
         post_dir = f"content/post/{folder_name}"
         os.makedirs(post_dir, exist_ok=True)
 
@@ -136,10 +156,10 @@ def run():
 
         full_content = f"""---
 title: "{entry.title}"
-date: {datetime.now().strftime('%Y-%m-%d')}
+date: {(datetime.now()-timedelta(days=1)).strftime('%Y-%m-%d')}
 categories: ["Genshin Impact", "Game Guide"]
 tags: ["Gaming", "News"]
-image: "cover.png"
+image: "cover.webp"
 ---
 
 {article_md}

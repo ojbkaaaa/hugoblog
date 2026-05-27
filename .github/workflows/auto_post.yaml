@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: '3.9'
       - name: Install deps
-        run: pip install feedparser requests openai
+        run: pip install feedparser requests openai Pillow
       - name: Scrape and Generate
         env:
           # 在 GitHub 仓库设置里把 API KEY 填进去：Settings -> Secrets
