@@ -1,0 +1,32 @@
+name: Auto Post News
+
+on:
+  schedule:
+    - cron: '0 1 * * *' # 北京时间每天上午 9 点运行
+  workflow_dispatch: # 允许你在 GitHub 网页手动点按钮触发测试
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Install deps
+        run: pip install feedparser requests openai
+      - name: Scrape and Generate
+        env:
+          # 在 GitHub 仓库设置里把 API KEY 填进去：Settings -> Secrets
+          APIKEY: ${{ secrets.APIKEY }} 
+          BASEURL: ${{ secrets.BASEURL }} 
+          MODEL: ${{ secrets.MODEL }} 
+        run: python scripts/gen_game_post.py
+      - name: Commit & Push
+        run: |
+          git config --global user.name "Bot-Auto-Writer"
+          git config --global user.email "bot@yoursite.com"
+          git add .
+          git commit -m "Auto add new game guide" || echo "No changes"
+          git push
