@@ -2,7 +2,7 @@ name: Deploy Hugo site to Pages
 
 on:
   push:
-    branches: ["main"] # 如果你的分支名是 master，这里就改 master
+    branches: ["main"]
 
 permissions:
   contents: read
@@ -18,18 +18,18 @@ jobs:
         with:
           submodules: recursive
       - name: Install Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5  # 升级到了 v5
         with:
-          go-version: '1.26.3' # 根据你的版本调整
+          go-version: '1.20'
       - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v2
+        uses: peaceiris/actions-hugo@v3 # 升级到了 v3
         with:
           hugo-version: 'latest'
-          extended: true # Stack 必须用 extended
+          extended: true
       - name: Build with Hugo
         run: hugo --minify
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3 # 核心修复：升级到 v3 避开弃用错误
         with:
           path: ./public
 
@@ -42,4 +42,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4 # 升级到了 v4
