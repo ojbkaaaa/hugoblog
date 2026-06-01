@@ -1,5 +1,5 @@
 ---
-title: "Alice is NOT a hero.She is amoral at best and a scumbag at worst who just so happens to be on the side of "good"."
+title: "Alice is NOT a hero.She is amoral at best and a scumbag at worst who just so happens to be on the side of `good`."
 date: 2026-05-30
 categories: ["Genshin Impact", "Game Guide"]
 tags: ["Gaming", "News"]

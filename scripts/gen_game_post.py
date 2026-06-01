@@ -215,7 +215,7 @@ def run():
 
 
             full_content = f"""---
-title: "{entry.title}"
+title: "{entry.title.replace('"', "`")}"
 date: {(datetime.now()-timedelta(days=1)).strftime('%Y-%m-%d')}
 categories: ["Genshin Impact", "Game Guide"]
 tags: ["Gaming", "News"]
